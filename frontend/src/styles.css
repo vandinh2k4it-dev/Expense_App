@@ -31,7 +31,7 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html {
   min-height: 100%;
-  background: #0a7f8f;
+  background: #0b4f9e;
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
   overscroll-behavior-y: none;
@@ -54,7 +54,10 @@ input { -webkit-user-select: text; user-select: text; }
 body::before {
   content: '';
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: -300px; /* kéo dài xuống dưới để phủ cả vùng safe-area của iPhone */
   z-index: -1;
   background:
     radial-gradient(420px 320px at 100% 0%, rgba(255, 194, 51, 0.28), transparent 70%),
@@ -170,6 +173,8 @@ input, select, textarea { font-size: 16px; }
   display: grid; grid-template-columns: 1fr 1fr 74px 1fr 1fr; align-items: center;
   padding: 8px 6px calc(10px + env(safe-area-inset-bottom));
 }
+/* Nếu iOS chừa dải hở dưới cùng (chế độ standalone), phủ tiếp bằng màu của thanh tab */
+.tabbar::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 300px; background: var(--card); }
 .tab { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; font-weight: 600; color: var(--muted); padding: 4px 0; }
 .tab .i { font-size: 21px; filter: grayscale(1); opacity: .65; }
 .tab.on { color: var(--g2); }

@@ -1,11 +1,8 @@
-feat(frontend): thêm icon app, đổi giao diện theo màu logo, full màn hình mobile
+fix(frontend): sửa dải hở dưới thanh tab khi chạy từ Màn hình chính iPhone
 
-- Thêm icon từ logo: apple-touch-icon, icon 192/512, favicon và manifest
-- Bật chế độ standalone trên iPhone khi thêm vào Màn hình chính
-- Đổi giao diện sang tông xanh lá - xanh dương theo logo, nền gradient
-- Nút thêm khoản chi dùng màu vàng đồng xu, biểu đồ và nút bấm đổi màu
-- App full màn hình, chặn zoom hai ngón và nhấn đúp, ô nhập 16px tránh iOS tự phóng to
-- Màn hình đăng nhập hiển thị logo trong thẻ trên nền gradient
+- Kéo dài nền gradient xuống dưới để phủ vùng safe-area
+- Thanh tab phủ thêm màu nền xuống mép dưới màn hình
+- Đổi màu nền html về xanh dương cuối gradient
 
 Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01LyWuwHtGqDhvJnyhMkThyu
