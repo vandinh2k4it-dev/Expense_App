@@ -14,9 +14,10 @@ const MODES = [
 
 export default function Stats({ refreshKey, onEdit }) {
   const [mode, setMode] = useState('week');
+  const [kind, setKind] = useState('expense'); // expense | income
   const [cursor, setCursor] = useState(new Date());
   const [sum, setSum] = useState(null);
-  const [dayItems, setDayItems] = useState([]);
+  const [items, setItems] = useState([]);
   const [err, setErr] = useState('');
 
   const { from, to, label } = useMemo(() => {
@@ -30,7 +31,7 @@ export default function Stats({ refreshKey, onEdit }) {
     setErr('');
     setSum(null);
     Promise.all([api.summary(from, to), api.list({ from, to })])
-      .then(([s, l]) => { if (alive) { setSum(s); setDayItems(l); } })
+      .then(([s, l]) => { if (alive) { setSum(s); setItems(l); } })
       .catch((e) => alive && setErr(e.message));
     return () => { alive = false; };
   }, [from, to, refreshKey]);
@@ -41,11 +42,11 @@ export default function Stats({ refreshKey, onEdit }) {
     else setCursor(addMonths(cursor, dir));
   };
   const atFuture = to >= todayISO() && from <= todayISO();
+  const isIn = kind === 'income';
 
-  // dữ liệu cột
   const bars = useMemo(() => {
     if (!sum || mode === 'day') return [];
-    const map = new Map(sum.byDay.map((d) => [d.day, d.total]));
+    const map = new Map(sum.byDay.map((d) => [d.day, d[kind]]));
     const out = [];
     let d = fromISO(from);
     const end = fromISO(to);
@@ -59,18 +60,22 @@ export default function Stats({ refreshKey, onEdit }) {
       d = addDays(d, 1);
     }
     return out;
-  }, [sum, mode, from, to]);
+  }, [sum, mode, kind, from, to]);
 
   const max = Math.max(1, ...bars.map((b) => b.value));
   const days = bars.length || 1;
-  const avg = sum ? sum.total / (mode === 'day' ? 1 : days) : 0;
-  const catMax = Math.max(1, ...(sum?.byCategory.map((c) => c.total) || [1]));
+  const kindTotal = sum ? sum[kind] : 0;
+  const avg = sum ? kindTotal / (mode === 'day' ? 1 : days) : 0;
+  const cats = sum ? sum.byCategory.filter((c) => c.type === kind) : [];
+  const catMax = Math.max(1, ...cats.map((c) => c.total));
+  const balance = sum ? sum.income - sum.expense : 0;
+  const listItems = items.filter((e) => (isIn ? e.type === 'income' : e.type !== 'income'));
 
   return (
     <div className="page">
       <div className="topbar">
         <div>
-          <div className="hello">Phân tích chi tiêu</div>
+          <div className="hello">Phân tích thu chi</div>
           <h1 className="title">Thống kê</h1>
         </div>
       </div>
@@ -89,16 +94,28 @@ export default function Stats({ refreshKey, onEdit }) {
 
       {err && <div className="err">{err}</div>}
 
+      <div className="seg kindseg">
+        <button className={!isIn ? 'on' : ''} onClick={() => setKind('expense')}>⬆ Chi tiêu</button>
+        <button className={isIn ? 'on' : ''} onClick={() => setKind('income')}>⬇ Thu nhập</button>
+      </div>
+
       <div className="card pad">
         <div className="total-box">
-          <small>Tổng chi</small>
-          <div className="big">{sum ? fmtVND(sum.total) : '—'}</div>
-          {sum && mode !== 'day' && <small>Trung bình {fmtVND(avg)}/ngày · {sum.count} giao dịch</small>}
-          {sum && mode === 'day' && <small>{sum.count} giao dịch</small>}
+          <small>{isIn ? 'Tổng thu' : 'Tổng chi'}</small>
+          <div className={'big' + (isIn ? ' in' : '')}>{sum ? fmtVND(kindTotal) : '—'}</div>
+          {sum && mode !== 'day' && <small>Trung bình {fmtVND(avg)}/ngày</small>}
         </div>
 
+        {sum && (
+          <div className="tri">
+            <div><small>Thu</small><b className="in">+{fmtVND(sum.income)}</b></div>
+            <div><small>Chi</small><b>-{fmtVND(sum.expense)}</b></div>
+            <div><small>Còn lại</small><b>{fmtVND(balance)}</b></div>
+          </div>
+        )}
+
         {mode !== 'day' && sum && (
-          <div className={'bars' + (mode === 'month' ? ' dense' : '')}>
+          <div className={'bars' + (mode === 'month' ? ' dense' : '') + (isIn ? ' in' : '')}>
             {bars.map((b, i) => {
               const h = b.value ? Math.max(4, (b.value / max) * 100) : 0;
               const showLabel = mode === 'week' || i === 0 || (i + 1) % 5 === 0;
@@ -119,19 +136,19 @@ export default function Stats({ refreshKey, onEdit }) {
         )}
       </div>
 
-      {sum && sum.byCategory.length > 0 && (
+      {cats.length > 0 && (
         <>
-          <div className="section-title">Theo danh mục</div>
+          <div className="section-title">{isIn ? 'Nguồn thu' : 'Theo danh mục'}</div>
           <div className="card pad">
-            {sum.byCategory.map((c) => {
+            {cats.map((c) => {
               const cat = catOf(c.category);
               return (
-                <div className="cat-row" key={c.category}>
+                <div className="cat-row" key={c.type + c.category}>
                   <div className="ico" style={{ background: cat.color + '26' }}>{cat.icon}</div>
                   <div className="grow">
                     <div className="top">
                       <span>{cat.label}</span>
-                      <span>{fmtVND(c.total)} <small style={{ color: 'var(--muted)', fontWeight: 500 }}>· {Math.round((c.total / (sum.total || 1)) * 100)}%</small></span>
+                      <span>{fmtVND(c.total)} <small style={{ color: 'var(--muted)', fontWeight: 500 }}>· {Math.round((c.total / (kindTotal || 1)) * 100)}%</small></span>
                     </div>
                     <div className="track"><i style={{ width: (c.total / catMax) * 100 + '%', background: cat.color }} /></div>
                   </div>
@@ -142,8 +159,8 @@ export default function Stats({ refreshKey, onEdit }) {
         </>
       )}
 
-      <div className="section-title">Chi tiết <span>{dayItems.length} khoản</span></div>
-      {sum === null && !err ? <div className="loading"><span className="spin" /></div> : <GroupedList items={dayItems} onEdit={onEdit} />}
+      <div className="section-title">Chi tiết <span>{listItems.length} giao dịch</span></div>
+      {sum === null && !err ? <div className="loading"><span className="spin" /></div> : <GroupedList items={listItems} onEdit={onEdit} />}
     </div>
   );
 }

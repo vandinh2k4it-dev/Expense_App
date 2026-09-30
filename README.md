@@ -1,6 +1,6 @@
 # Sổ Chi Tiêu – web app mobile
 
-Ghi chi tiêu hằng ngày (nhập tay nội dung + số tiền), tự cộng tổng theo ngày / tuần / tháng, lọc kiểu MoMo (khoảng thời gian, danh mục, tìm kiếm).
+Ghi thu nhập và chi tiêu hằng ngày (nhập tay nội dung + số tiền), tự cộng tổng và số dư theo ngày / tuần / tháng, lọc kiểu MoMo (loại thu/chi, khoảng thời gian, danh mục, tìm kiếm).
 
 - **frontend/**: React + Vite → deploy **Vercel**
 - **backend/**: Node + Express → deploy **Render** (free)

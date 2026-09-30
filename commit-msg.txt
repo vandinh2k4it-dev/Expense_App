@@ -1,8 +1,16 @@
-fix(frontend): sửa dải hở dưới thanh tab khi chạy từ Màn hình chính iPhone
+feat: thêm chức năng thu nhập, hiển thị số dư thu chi kiểu MoMo
 
-- Kéo dài nền gradient xuống dưới để phủ vùng safe-area
-- Thanh tab phủ thêm màu nền xuống mép dưới màn hình
-- Đổi màu nền html về xanh dương cuối gradient
+Backend
+- Thêm cột type (expense/income) cho bảng expenses, tự nâng cấp dữ liệu cũ thành expense
+- API giao dịch hỗ trợ lọc theo type, thêm/sửa nhận type
+- Thống kê trả về tổng thu, tổng chi theo ngày và theo danh mục
+
+Frontend
+- Form thêm giao dịch có nút chuyển Chi tiêu / Thu nhập, danh mục thu nhập riêng
+- Trang chủ hiển thị số dư tháng, thu nhập, chi tiêu, chi hôm nay và chi tuần này
+- Sổ thu chi: lọc theo loại, thời gian, danh mục; khoản thu hiển thị màu xanh dấu +
+- Thống kê: chuyển xem Chi/Thu, tổng thu - chi - còn lại, biểu đồ và danh mục theo loại
+- Đổi tên tab Sổ chi thành Thu chi
 
 Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01LyWuwHtGqDhvJnyhMkThyu

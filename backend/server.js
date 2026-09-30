@@ -38,6 +38,8 @@ async function initDb() {
       created_at TIMESTAMPTZ DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS idx_expenses_user_date ON expenses(user_id, spent_on);
+    -- Thu nhập: dữ liệu cũ tự động là 'expense'
+    ALTER TABLE expenses ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'expense';
   `);
 }
 
@@ -59,6 +61,9 @@ const wrap = (fn) => (req, res) => fn(req, res).catch((e) => {
 });
 
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+const TYPES = ['expense', 'income'];
+const normType = (t) => (TYPES.includes(t) ? t : 'expense');
+const COLS = `id, to_char(spent_on, 'YYYY-MM-DD') AS spent_on, title, amount::float8 AS amount, category, type`;
 
 app.get('/', (_req, res) => res.json({ ok: true, name: 'expense-api' }));
 app.get('/health', (_req, res) => res.json({ ok: true }));
@@ -95,14 +100,15 @@ app.post('/api/auth/login', wrap(async (req, res) => {
   res.json({ token, user: { id: u.id, username: u.username } });
 }));
 
-// ---------- Expenses ----------
-// GET /api/expenses?from=YYYY-MM-DD&to=YYYY-MM-DD&category=food&q=text&min=&max=
+// ---------- Giao dịch (chi + thu) ----------
+// GET /api/expenses?from&to&type=expense|income&category&q&min&max
 app.get('/api/expenses', auth, wrap(async (req, res) => {
-  const { from, to, category, q, min, max } = req.query;
+  const { from, to, type, category, q, min, max } = req.query;
   const params = [req.user.id];
-  let sql = 'SELECT id, to_char(spent_on, \'YYYY-MM-DD\') AS spent_on, title, amount::float8 AS amount, category FROM expenses WHERE user_id = $1';
+  let sql = `SELECT ${COLS} FROM expenses WHERE user_id = $1`;
   if (isDate(from)) { params.push(from); sql += ` AND spent_on >= $${params.length}`; }
   if (isDate(to)) { params.push(to); sql += ` AND spent_on <= $${params.length}`; }
+  if (TYPES.includes(type)) { params.push(type); sql += ` AND type = $${params.length}`; }
   if (category && category !== 'all') { params.push(category); sql += ` AND category = $${params.length}`; }
   if (q) { params.push(`%${q}%`); sql += ` AND title ILIKE $${params.length}`; }
   if (min !== undefined && min !== '' && !isNaN(+min)) { params.push(+min); sql += ` AND amount >= $${params.length}`; }
@@ -112,32 +118,34 @@ app.get('/api/expenses', auth, wrap(async (req, res) => {
   res.json(r.rows);
 }));
 
-app.post('/api/expenses', auth, wrap(async (req, res) => {
+function readBody(req, res) {
   const { spent_on, title, amount, category } = req.body || {};
-  if (!isDate(spent_on)) return res.status(400).json({ error: 'Ngày không hợp lệ' });
-  if (!title || !title.trim()) return res.status(400).json({ error: 'Thiếu nội dung' });
+  const type = normType(req.body?.type);
+  if (!isDate(spent_on)) { res.status(400).json({ error: 'Ngày không hợp lệ' }); return null; }
+  if (!title || !title.trim()) { res.status(400).json({ error: 'Thiếu nội dung' }); return null; }
   const amt = Math.round(Number(amount));
-  if (!Number.isFinite(amt) || amt < 0) return res.status(400).json({ error: 'Số tiền không hợp lệ' });
+  if (!Number.isFinite(amt) || amt < 0) { res.status(400).json({ error: 'Số tiền không hợp lệ' }); return null; }
+  return { spent_on, title: title.trim(), amt, type, category: category || (type === 'income' ? 'other_in' : 'other') };
+}
+
+app.post('/api/expenses', auth, wrap(async (req, res) => {
+  const b = readBody(req, res);
+  if (!b) return;
   const r = await pool.query(
-    `INSERT INTO expenses (user_id, spent_on, title, amount, category)
-     VALUES ($1,$2,$3,$4,$5)
-     RETURNING id, to_char(spent_on, 'YYYY-MM-DD') AS spent_on, title, amount::float8 AS amount, category`,
-    [req.user.id, spent_on, title.trim(), amt, category || 'other']
+    `INSERT INTO expenses (user_id, spent_on, title, amount, category, type)
+     VALUES ($1,$2,$3,$4,$5,$6) RETURNING ${COLS}`,
+    [req.user.id, b.spent_on, b.title, b.amt, b.category, b.type]
   );
   res.json(r.rows[0]);
 }));
 
 app.put('/api/expenses/:id', auth, wrap(async (req, res) => {
-  const { spent_on, title, amount, category } = req.body || {};
-  if (!isDate(spent_on)) return res.status(400).json({ error: 'Ngày không hợp lệ' });
-  if (!title || !title.trim()) return res.status(400).json({ error: 'Thiếu nội dung' });
-  const amt = Math.round(Number(amount));
-  if (!Number.isFinite(amt) || amt < 0) return res.status(400).json({ error: 'Số tiền không hợp lệ' });
+  const b = readBody(req, res);
+  if (!b) return;
   const r = await pool.query(
-    `UPDATE expenses SET spent_on=$1, title=$2, amount=$3, category=$4
-     WHERE id=$5 AND user_id=$6
-     RETURNING id, to_char(spent_on, 'YYYY-MM-DD') AS spent_on, title, amount::float8 AS amount, category`,
-    [spent_on, title.trim(), amt, category || 'other', req.params.id, req.user.id]
+    `UPDATE expenses SET spent_on=$1, title=$2, amount=$3, category=$4, type=$5
+     WHERE id=$6 AND user_id=$7 RETURNING ${COLS}`,
+    [b.spent_on, b.title, b.amt, b.category, b.type, req.params.id, req.user.id]
   );
   if (!r.rows[0]) return res.status(404).json({ error: 'Không tìm thấy' });
   res.json(r.rows[0]);
@@ -148,27 +156,31 @@ app.delete('/api/expenses/:id', auth, wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
-// ---------- Stats ----------
-// GET /api/stats/summary?from=&to=  -> tổng, theo ngày, theo danh mục
+// ---------- Thống kê ----------
+const SUM_EXP = `COALESCE(SUM(amount) FILTER (WHERE type='expense'),0)::float8`;
+const SUM_INC = `COALESCE(SUM(amount) FILTER (WHERE type='income'),0)::float8`;
+
+// GET /api/stats/summary?from&to -> { expense, income, count, byDay[{day,expense,income,count}], byCategory[{type,category,total,count}] }
 app.get('/api/stats/summary', auth, wrap(async (req, res) => {
   const { from, to } = req.query;
   if (!isDate(from) || !isDate(to)) return res.status(400).json({ error: 'Thiếu from/to' });
   const p = [req.user.id, from, to];
   const [total, byDay, byCat] = await Promise.all([
-    pool.query('SELECT COALESCE(SUM(amount),0)::float8 AS total, COUNT(*)::int AS count FROM expenses WHERE user_id=$1 AND spent_on BETWEEN $2 AND $3', p),
-    pool.query(`SELECT to_char(spent_on,'YYYY-MM-DD') AS day, SUM(amount)::float8 AS total, COUNT(*)::int AS count
+    pool.query(`SELECT ${SUM_EXP} AS expense, ${SUM_INC} AS income, COUNT(*)::int AS count
+                FROM expenses WHERE user_id=$1 AND spent_on BETWEEN $2 AND $3`, p),
+    pool.query(`SELECT to_char(spent_on,'YYYY-MM-DD') AS day, ${SUM_EXP} AS expense, ${SUM_INC} AS income, COUNT(*)::int AS count
                 FROM expenses WHERE user_id=$1 AND spent_on BETWEEN $2 AND $3 GROUP BY spent_on ORDER BY spent_on`, p),
-    pool.query(`SELECT category, SUM(amount)::float8 AS total, COUNT(*)::int AS count
-                FROM expenses WHERE user_id=$1 AND spent_on BETWEEN $2 AND $3 GROUP BY category ORDER BY total DESC`, p),
+    pool.query(`SELECT type, category, SUM(amount)::float8 AS total, COUNT(*)::int AS count
+                FROM expenses WHERE user_id=$1 AND spent_on BETWEEN $2 AND $3 GROUP BY type, category ORDER BY total DESC`, p),
   ]);
   res.json({ ...total.rows[0], byDay: byDay.rows, byCategory: byCat.rows });
 }));
 
-// GET /api/stats/months?year=2026 -> tổng theo từng tháng trong năm
+// GET /api/stats/months?year=2026 -> thu/chi theo từng tháng
 app.get('/api/stats/months', auth, wrap(async (req, res) => {
   const year = parseInt(req.query.year, 10) || new Date().getFullYear();
   const r = await pool.query(
-    `SELECT EXTRACT(MONTH FROM spent_on)::int AS month, SUM(amount)::float8 AS total, COUNT(*)::int AS count
+    `SELECT EXTRACT(MONTH FROM spent_on)::int AS month, ${SUM_EXP} AS expense, ${SUM_INC} AS income, COUNT(*)::int AS count
      FROM expenses WHERE user_id=$1 AND EXTRACT(YEAR FROM spent_on)=$2
      GROUP BY 1 ORDER BY 1`,
     [req.user.id, year]

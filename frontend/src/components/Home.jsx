@@ -24,17 +24,17 @@ export default function Home({ user, refreshKey, onEdit }) {
   const now = new Date();
   const today = todayISO();
   const weekStart = toISO(startOfWeek(now));
-  const dayTotal = sum?.byDay.find((d) => d.day === today)?.total || 0;
-  const weekTotal = sum ? sum.byDay.filter((d) => d.day >= weekStart && d.day <= today).reduce((a, d) => a + d.total, 0) : 0;
-  // tuần có thể kéo sang tháng trước → cộng bù từ danh sách gần đây
-  const weekFromRecent = recent ? recent.filter((e) => e.spent_on >= weekStart).reduce((a, e) => a + e.amount, 0) : weekTotal;
+  const spent = (list, pred) => (list || []).filter((e) => e.type !== 'income' && pred(e)).reduce((a, e) => a + e.amount, 0);
+  const dayExpense = spent(recent, (e) => e.spent_on === today);
+  const weekExpense = spent(recent, (e) => e.spent_on >= weekStart);
+  const balance = sum ? sum.income - sum.expense : 0;
 
   return (
     <div className="page">
       <div className="topbar">
         <div>
           <div className="hello">Xin chào, {user.username} 👋</div>
-          <h1 className="title">Chi tiêu của bạn</h1>
+          <h1 className="title">Thu chi của bạn</h1>
         </div>
         <div className="avatar">{user.username[0]?.toUpperCase()}</div>
       </div>
@@ -42,11 +42,15 @@ export default function Home({ user, refreshKey, onEdit }) {
       {err && <div className="err">{err}</div>}
 
       <div className="hero">
-        <small>Tổng chi tháng {now.getMonth() + 1}</small>
-        <div className="big">{sum ? fmtVND(sum.total) : '—'}</div>
+        <small>Số dư tháng {now.getMonth() + 1}</small>
+        <div className="big">{sum ? fmtVND(balance) : '—'}</div>
         <div className="row">
-          <div className="pill"><small>Hôm nay</small><b>{fmtVND(dayTotal)}</b></div>
-          <div className="pill"><small>Tuần này</small><b>{fmtVND(weekFromRecent)}</b></div>
+          <div className="pill"><small>⬇ Thu nhập</small><b>{sum ? '+' + fmtVND(sum.income) : '—'}</b></div>
+          <div className="pill"><small>⬆ Chi tiêu</small><b>{sum ? '-' + fmtVND(sum.expense) : '—'}</b></div>
+        </div>
+        <div className="row small">
+          <div className="pill"><small>Chi hôm nay</small><b>{fmtVND(dayExpense)}</b></div>
+          <div className="pill"><small>Chi tuần này</small><b>{fmtVND(weekExpense)}</b></div>
         </div>
       </div>
 

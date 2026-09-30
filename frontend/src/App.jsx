@@ -38,7 +38,7 @@ export default function App() {
 
   const tabs = [
     { id: 'home', icon: '🏠', label: 'Trang chủ' },
-    { id: 'history', icon: '🧾', label: 'Sổ chi' },
+    { id: 'history', icon: '🧾', label: 'Thu chi' },
     { id: 'add' },
     { id: 'stats', icon: '📊', label: 'Thống kê' },
     { id: 'me', icon: '👤', label: 'Tôi' },

@@ -1,4 +1,4 @@
-export const CATEGORIES = [
+export const EXPENSE_CATEGORIES = [
   { id: 'food', label: 'Ăn uống', icon: '🍜', color: '#ff8a4c' },
   { id: 'shopping', label: 'Mua sắm', icon: '🛍️', color: '#ff5c8a' },
   { id: 'transport', label: 'Di chuyển', icon: '🛵', color: '#3fa9f5' },
@@ -7,7 +7,17 @@ export const CATEGORIES = [
   { id: 'health', label: 'Sức khỏe', icon: '💊', color: '#f2c94c' },
   { id: 'other', label: 'Khác', icon: '✨', color: '#9aa3b2' },
 ];
-export const catOf = (id) => CATEGORIES.find((c) => c.id === id) || CATEGORIES[CATEGORIES.length - 1];
+export const INCOME_CATEGORIES = [
+  { id: 'salary', label: 'Lương', icon: '💼', color: '#22c3a6' },
+  { id: 'bonus', label: 'Thưởng', icon: '🎁', color: '#f2c94c' },
+  { id: 'gift', label: 'Được cho', icon: '🧧', color: '#ff5c8a' },
+  { id: 'invest', label: 'Đầu tư', icon: '📈', color: '#3fa9f5' },
+  { id: 'sell', label: 'Bán đồ', icon: '🏷️', color: '#8b7bff' },
+  { id: 'other_in', label: 'Khác', icon: '💰', color: '#9aa3b2' },
+];
+export const catsOf = (type) => (type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES);
+export const catOf = (id) =>
+  [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES].find((c) => c.id === id) || EXPENSE_CATEGORIES[EXPENSE_CATEGORIES.length - 1];
 
 export const fmtVND = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n || 0)) + 'đ';
 export const fmtShort = (n) => {
@@ -50,9 +60,10 @@ export function weekLabel(start) {
 export function groupByDay(items) {
   const map = new Map();
   for (const e of items) {
-    if (!map.has(e.spent_on)) map.set(e.spent_on, { day: e.spent_on, total: 0, items: [] });
+    if (!map.has(e.spent_on)) map.set(e.spent_on, { day: e.spent_on, expense: 0, income: 0, items: [] });
     const g = map.get(e.spent_on);
-    g.total += e.amount;
+    if (e.type === 'income') g.income += e.amount;
+    else g.expense += e.amount;
     g.items.push(e);
   }
   return [...map.values()].sort((a, b) => (a.day < b.day ? 1 : -1));

@@ -14,6 +14,7 @@
   --muted: #6b7f92;
   --line: #e1eaf1;
   --danger: #ff4d6d;
+  --in: #0f9d76;
   --radius: 22px;
   --shadow: 0 10px 30px rgba(6, 40, 70, 0.18);
 }
@@ -25,6 +26,7 @@
     --muted: #8fa5c2;
     --line: #21385a;
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    --in: #3ddcae;
   }
 }
 
@@ -221,3 +223,34 @@ input, select, textarea { font-size: 16px; }
 .loading { text-align: center; color: #fff; padding: 30px; }
 .spin { display: inline-block; width: 22px; height: 22px; border: 3px solid rgba(255, 255, 255, .3); border-top-color: #fff; border-radius: 50%; animation: sp .7s linear infinite; }
 @keyframes sp { to { transform: rotate(360deg); } }
+
+/* ===== Thu nhập ===== */
+.item .amt.in { color: var(--in); }
+.day-head .sums, .summary-line .sums { display: flex; gap: 10px; }
+.day-head .in { color: #b8ffe3; }
+.hero .row + .row { margin-top: 10px; }
+.hero .row.small .pill { padding: 8px 12px; }
+.hero .row.small .pill b { font-size: 14px; }
+.summary-line { display: flex; justify-content: space-between; align-items: center; }
+.summary-line small { color: var(--muted); }
+.summary-line .sums { font-size: 16px; }
+.summary-line .in { color: var(--in); }
+
+.sheet .seg { background: var(--bg); border-color: transparent; margin-bottom: 16px; }
+.sheet .seg button { color: var(--muted); }
+.sheet .seg button.on { background: linear-gradient(135deg, var(--g1), var(--g3)); color: #fff; box-shadow: none; }
+.sheet .seg button.on.in { background: linear-gradient(135deg, #ffd45c, var(--accent2)); color: #4a2a00; }
+.amount-input.in { color: var(--in); }
+
+.total-box .big.in { background: linear-gradient(135deg, #12a37f, #0c8c6c); -webkit-background-clip: text; background-clip: text; }
+.tri { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 14px; }
+.tri > div { background: var(--bg); border-radius: 14px; padding: 10px 6px; text-align: center; min-width: 0; }
+.tri small { display: block; color: var(--muted); font-size: 11px; margin-bottom: 2px; }
+.tri b { font-size: 13px; white-space: nowrap; }
+.tri .in { color: var(--in); }
+.bars.in .bar i:not(.zero) { background: linear-gradient(180deg, #ffe28a, var(--accent2)); }
+
+@media (prefers-color-scheme: dark) {
+  .total-box .big { background: linear-gradient(135deg, #4fe0c0, #6db3ff); -webkit-background-clip: text; background-clip: text; }
+  .total-box .big.in { background: linear-gradient(135deg, #7cf0cf, #3ddcae); -webkit-background-clip: text; background-clip: text; }
+}
