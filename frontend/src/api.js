@@ -35,8 +35,11 @@ async function req(path, { method = 'GET', body, params } = {}) {
 }
 
 export const api = {
-  register: (username, password) => req('/api/auth/register', { method: 'POST', body: { username, password } }),
+  register: (username, password, display_name, avatar) =>
+    req('/api/auth/register', { method: 'POST', body: { username, password, display_name, avatar } }),
   login: (username, password) => req('/api/auth/login', { method: 'POST', body: { username, password } }),
+  me: () => req('/api/me'),
+  updateMe: (body) => req('/api/me', { method: 'PUT', body }),
   list: (params) => req('/api/expenses', { params }),
   create: (e) => req('/api/expenses', { method: 'POST', body: e }),
   update: (id, e) => req(`/api/expenses/${id}`, { method: 'PUT', body: e }),

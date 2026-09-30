@@ -1,16 +1,17 @@
-feat: thêm chức năng thu nhập, hiển thị số dư thu chi kiểu MoMo
+feat: đăng ký có tên hiển thị và ảnh đại diện, đổi icon app hiện đại
 
 Backend
-- Thêm cột type (expense/income) cho bảng expenses, tự nâng cấp dữ liệu cũ thành expense
-- API giao dịch hỗ trợ lọc theo type, thêm/sửa nhận type
-- Thống kê trả về tổng thu, tổng chi theo ngày và theo danh mục
+- Thêm cột display_name, avatar cho bảng users (tự migrate khi khởi động)
+- Đăng ký nhận tên hiển thị và ảnh đại diện (data URL JPEG/PNG/WebP, tối đa ~300KB)
+- Thêm API GET/PUT /api/me để xem và sửa hồ sơ, hỗ trợ xóa ảnh
+- Lỗi body quá lớn trả về JSON thay vì HTML
 
 Frontend
-- Form thêm giao dịch có nút chuyển Chi tiêu / Thu nhập, danh mục thu nhập riêng
-- Trang chủ hiển thị số dư tháng, thu nhập, chi tiêu, chi hôm nay và chi tuần này
-- Sổ thu chi: lọc theo loại, thời gian, danh mục; khoản thu hiển thị màu xanh dấu +
-- Thống kê: chuyển xem Chi/Thu, tổng thu - chi - còn lại, biểu đồ và danh mục theo loại
-- Đổi tên tab Sổ chi thành Thu chi
+- Form đăng ký có chọn ảnh (tự cắt vuông, nén 256px) và nhập tên hiển thị
+- Trang chủ và tab Tôi hiển thị tên và ảnh đại diện, có màn chỉnh sửa hồ sơ
+- Đồng bộ hồ sơ từ server mỗi lần mở app
+- Icon mới phẳng hiện đại theo gradient xanh của app (apple-touch-icon, 192/512, favicon)
+- Thêm assets/icon.svg làm file gốc của icon
 
 Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01LyWuwHtGqDhvJnyhMkThyu

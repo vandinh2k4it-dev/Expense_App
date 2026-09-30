@@ -61,7 +61,8 @@ Mở link Vercel bằng Safari/Chrome → **Thêm vào Màn hình chính**.
 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
-| POST | `/api/auth/register`, `/api/auth/login` | Đăng ký / đăng nhập (JWT) |
+| POST | `/api/auth/register`, `/api/auth/login` | Đăng ký (kèm tên hiển thị, ảnh đại diện) / đăng nhập (JWT) |
+| GET / PUT | `/api/me` | Xem / sửa hồ sơ (tên hiển thị, ảnh đại diện) |
 | GET | `/api/expenses?from&to&category&q&min&max` | Danh sách + lọc |
 | POST / PUT / DELETE | `/api/expenses[/:id]` | Thêm / sửa / xóa |
 | GET | `/api/stats/summary?from&to` | Tổng, theo ngày, theo danh mục |

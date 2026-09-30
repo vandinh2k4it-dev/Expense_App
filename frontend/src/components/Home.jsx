@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { GroupedList } from './ExpenseList.jsx';
+import { Avatar, userName } from './Avatar.jsx';
 import { addDays, endOfMonth, fmtVND, startOfMonth, startOfWeek, toISO, todayISO } from '../utils.js';
 
-export default function Home({ user, refreshKey, onEdit }) {
+export default function Home({ user, refreshKey, onEdit, onProfile }) {
   const [sum, setSum] = useState(null);
   const [recent, setRecent] = useState(null);
   const [err, setErr] = useState('');
@@ -33,10 +34,10 @@ export default function Home({ user, refreshKey, onEdit }) {
     <div className="page">
       <div className="topbar">
         <div>
-          <div className="hello">Xin chào, {user.username} 👋</div>
+          <div className="hello">Xin chào, {userName(user)} 👋</div>
           <h1 className="title">Thu chi của bạn</h1>
         </div>
-        <div className="avatar">{user.username[0]?.toUpperCase()}</div>
+        <button className="avatar-btn" onClick={onProfile} aria-label="Hồ sơ"><Avatar user={user} size={44} /></button>
       </div>
 
       {err && <div className="err">{err}</div>}
