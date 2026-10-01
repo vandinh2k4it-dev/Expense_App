@@ -1,12 +1,11 @@
-perf(frontend): tăng tốc tải trang, hiện dữ liệu cache ngay và báo khi server đang khởi động
+fix(frontend): sửa dải hở dưới thanh tab trên iPhone và banner đè lời chào
 
-- Ping /health ngay trong index.html để đánh thức server Render trước khi React chạy
-- Thêm preconnect tới API qua plugin Vite, build vẫn chạy khi chưa đặt VITE_API_URL
-- Tải font không chặn hiển thị (chữ hiện ngay bằng font hệ thống)
-- Cache kết quả danh sách và thống kê trong localStorage, Trang chủ, Thu chi, Thống kê hiện dữ liệu lần trước ngay rồi cập nhật khi server trả lời
-- Xóa cache khi đăng xuất hoặc đổi tài khoản
-- Hiện thông báo khi server phản hồi chậm hơn 3.5 giây
-- README: hướng dẫn dùng cron-job.org giữ server không ngủ
+- Thanh tab chuyển sang kính tối mờ dần về đúng màu cuối của nền, không còn đường viền
+  khi iOS chừa dải ở đáy màn hình ở chế độ Màn hình chính
+- Đo khoảng chênh giữa màn hình và vùng hiển thị (--vp-gap) để không cộng vùng an toàn hai lần
+- Chuyển thông báo "server đang khởi động" xuống phía trên thanh tab, không che tiêu đề nữa
+- Hiện — thay vì 0đ cho chi hôm nay / tuần này khi dữ liệu chưa tải xong
+- Đổi màu chữ và nút giữa thanh tab cho hợp nền tối mới
 
 Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01LyWuwHtGqDhvJnyhMkThyu

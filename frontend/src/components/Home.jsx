@@ -57,8 +57,8 @@ export default function Home({ user, refreshKey, onEdit, onProfile }) {
           <div className="pill"><small>⬆ Chi tiêu</small><b>{sum ? '-' + fmtVND(sum.expense) : '—'}</b></div>
         </div>
         <div className="row small">
-          <div className="pill"><small>Chi hôm nay</small><b>{fmtVND(dayExpense)}</b></div>
-          <div className="pill"><small>Chi tuần này</small><b>{fmtVND(weekExpense)}</b></div>
+          <div className="pill"><small>Chi hôm nay</small><b>{recent ? fmtVND(dayExpense) : '—'}</b></div>
+          <div className="pill"><small>Chi tuần này</small><b>{recent ? fmtVND(weekExpense) : '—'}</b></div>
         </div>
       </div>
 
