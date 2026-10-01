@@ -19,6 +19,14 @@ export default function App() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState('');
+  const [slow, setSlow] = useState(false);
+
+  // Báo cho người dùng biết khi server miễn phí đang "thức dậy"
+  useEffect(() => {
+    const h = (e) => setSlow(!!e.detail);
+    window.addEventListener('api-slow', h);
+    return () => window.removeEventListener('api-slow', h);
+  }, []);
 
   const logout = useCallback(() => {
     setToken('');
@@ -41,7 +49,9 @@ export default function App() {
     api.me().then(storeUser).catch(() => {});
   }, [hasUser, storeUser]);
 
-  if (!user) return <Auth onDone={setUser} />;
+  const slowBanner = slow && <div className="slow">⏳ Máy chủ miễn phí đang khởi động, chờ khoảng 30 giây…</div>;
+
+  if (!user) return <>{slowBanner}<Auth onDone={setUser} /></>;
 
   const flash = (msg) => {
     setToast(msg);
@@ -101,6 +111,7 @@ export default function App() {
         />
       )}
       {toast && <div className="toast">{toast}</div>}
+      {slowBanner}
     </div>
   );
 }

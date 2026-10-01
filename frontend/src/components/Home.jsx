@@ -1,23 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../api.js';
+import { api, cached } from '../api.js';
 import { GroupedList } from './ExpenseList.jsx';
 import { Avatar, userName } from './Avatar.jsx';
 import { addDays, endOfMonth, fmtVND, startOfMonth, startOfWeek, toISO, todayISO } from '../utils.js';
 
+function ranges() {
+  const now = new Date();
+  return {
+    monthFrom: toISO(startOfMonth(now)),
+    monthTo: toISO(endOfMonth(now)),
+    recent: { from: toISO(addDays(now, -6)), to: todayISO() },
+  };
+}
+
 export default function Home({ user, refreshKey, onEdit, onProfile }) {
-  const [sum, setSum] = useState(null);
-  const [recent, setRecent] = useState(null);
+  // Hiện ngay dữ liệu lần trước (nếu có), rồi cập nhật khi server trả lời
+  const [sum, setSum] = useState(() => { const r = ranges(); return cached.summary(r.monthFrom, r.monthTo); });
+  const [recent, setRecent] = useState(() => cached.list(ranges().recent));
   const [err, setErr] = useState('');
 
   useEffect(() => {
     let alive = true;
-    const now = new Date();
+    const r = ranges();
     setErr('');
-    Promise.all([
-      api.summary(toISO(startOfMonth(now)), toISO(endOfMonth(now))),
-      api.list({ from: toISO(addDays(now, -6)), to: todayISO() }),
-    ])
-      .then(([s, r]) => { if (alive) { setSum(s); setRecent(r); } })
+    Promise.all([api.summary(r.monthFrom, r.monthTo), api.list(r.recent)])
+      .then(([s, l]) => { if (alive) { setSum(s); setRecent(l); } })
       .catch((e) => alive && setErr(e.message));
     return () => { alive = false; };
   }, [refreshKey]);

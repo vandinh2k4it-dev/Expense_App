@@ -54,6 +54,15 @@ Tạo repo mới, đẩy cả thư mục này lên (giữ nguyên `frontend/` v�
 3. **Environment Variables**: `VITE_API_URL` = URL Render ở bước 3 (không có dấu `/` cuối).
 4. Deploy. Sau đó quay lại Render, đặt `CORS_ORIGIN` = domain Vercel.
 
+### Giữ server Render không "ngủ" (khuyên dùng)
+Render free ngủ sau ~15 phút không có ai truy cập, lần mở đầu phải chờ 30–60 giây. Cách miễn phí để tránh:
+1. Vào https://cron-job.org (miễn phí) → tạo tài khoản → **Create cronjob**.
+2. **URL**: `https://<tên-service>.onrender.com/health`
+3. **Schedule**: mỗi **10 phút** (Every 10 minutes).
+4. Lưu lại. Server sẽ luôn thức, app mở là chạy ngay.
+
+Gói Render free có 750 giờ/tháng, đủ chạy 1 service liên tục cả tháng.
+
 ### 5) Dùng như app trên điện thoại
 Mở link Vercel bằng Safari/Chrome → **Thêm vào Màn hình chính**.
 

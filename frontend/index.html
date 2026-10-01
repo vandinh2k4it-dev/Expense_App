@@ -16,9 +16,29 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Sổ Chi Tiêu</title>
+
+    <!-- Đánh thức server miễn phí ngay khi trang bắt đầu tải, trước cả khi React chạy -->
+    <script>
+      (function () {
+        var u = '__API_URL__';
+        if (/^https?:/.test(u)) {
+          try { fetch(u.replace(/\/$/, '') + '/health', { mode: 'no-cors', cache: 'no-store' }).catch(function () {}); } catch (e) {}
+        }
+      })();
+    </script>
+
+    <!-- Font không chặn hiển thị: chữ hiện ngay bằng font hệ thống, font đẹp tải xong sẽ thay -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>

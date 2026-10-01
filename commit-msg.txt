@@ -1,17 +1,12 @@
-feat: đăng ký có tên hiển thị và ảnh đại diện, đổi icon app hiện đại
+perf(frontend): tăng tốc tải trang, hiện dữ liệu cache ngay và báo khi server đang khởi động
 
-Backend
-- Thêm cột display_name, avatar cho bảng users (tự migrate khi khởi động)
-- Đăng ký nhận tên hiển thị và ảnh đại diện (data URL JPEG/PNG/WebP, tối đa ~300KB)
-- Thêm API GET/PUT /api/me để xem và sửa hồ sơ, hỗ trợ xóa ảnh
-- Lỗi body quá lớn trả về JSON thay vì HTML
-
-Frontend
-- Form đăng ký có chọn ảnh (tự cắt vuông, nén 256px) và nhập tên hiển thị
-- Trang chủ và tab Tôi hiển thị tên và ảnh đại diện, có màn chỉnh sửa hồ sơ
-- Đồng bộ hồ sơ từ server mỗi lần mở app
-- Icon mới phẳng hiện đại theo gradient xanh của app (apple-touch-icon, 192/512, favicon)
-- Thêm assets/icon.svg làm file gốc của icon
+- Ping /health ngay trong index.html để đánh thức server Render trước khi React chạy
+- Thêm preconnect tới API qua plugin Vite, build vẫn chạy khi chưa đặt VITE_API_URL
+- Tải font không chặn hiển thị (chữ hiện ngay bằng font hệ thống)
+- Cache kết quả danh sách và thống kê trong localStorage, Trang chủ, Thu chi, Thống kê hiện dữ liệu lần trước ngay rồi cập nhật khi server trả lời
+- Xóa cache khi đăng xuất hoặc đổi tài khoản
+- Hiện thông báo khi server phản hồi chậm hơn 3.5 giây
+- README: hướng dẫn dùng cron-job.org giữ server không ngủ
 
 Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01LyWuwHtGqDhvJnyhMkThyu

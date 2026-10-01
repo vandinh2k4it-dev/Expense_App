@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { api } from '../api.js';
+import { api, cached } from '../api.js';
 import { GroupedList } from './ExpenseList.jsx';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, addDays, endOfMonth, addMonths, fmtVND, startOfMonth, toISO, todayISO } from '../utils.js';
 
@@ -25,12 +25,19 @@ function rangeDates(id) {
   return {};
 }
 
+const buildParams = (range, type, category, q) => ({
+  ...rangeDates(range),
+  type: type === 'all' ? '' : type,
+  category,
+  q: q.trim(),
+});
+
 export default function History({ refreshKey, onEdit }) {
   const [range, setRange] = useState('month');
   const [type, setType] = useState('all');
   const [category, setCategory] = useState('all');
   const [q, setQ] = useState('');
-  const [items, setItems] = useState(null);
+  const [items, setItems] = useState(() => cached.list(buildParams('month', 'all', 'all', '')));
   const [err, setErr] = useState('');
 
   const cats = type === 'income' ? INCOME_CATEGORIES : type === 'expense' ? EXPENSE_CATEGORIES : [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
@@ -38,8 +45,11 @@ export default function History({ refreshKey, onEdit }) {
   useEffect(() => {
     let alive = true;
     setErr('');
+    const params = buildParams(range, type, category, q);
+    // đổi bộ lọc: hiện ngay kết quả đã cache của bộ lọc đó (nếu có), nếu không giữ danh sách cũ
+    setItems((cur) => cached.list(params) || cur);
     const t = setTimeout(() => {
-      api.list({ ...rangeDates(range), type: type === 'all' ? '' : type, category, q: q.trim() })
+      api.list(params)
         .then((r) => alive && setItems(r))
         .catch((e) => alive && setErr(e.message));
     }, q ? 300 : 0);

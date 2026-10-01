@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { api } from '../api.js';
+import { api, cached } from '../api.js';
 import { GroupedList } from './ExpenseList.jsx';
 import {
   WD_SHORT, addDays, addMonths, catOf, dayLabel, endOfMonth, fmtShort, fmtVND, fromISO,
@@ -16,8 +16,6 @@ export default function Stats({ refreshKey, onEdit }) {
   const [mode, setMode] = useState('week');
   const [kind, setKind] = useState('expense'); // expense | income
   const [cursor, setCursor] = useState(new Date());
-  const [sum, setSum] = useState(null);
-  const [items, setItems] = useState([]);
   const [err, setErr] = useState('');
 
   const { from, to, label } = useMemo(() => {
@@ -26,10 +24,15 @@ export default function Stats({ refreshKey, onEdit }) {
     return { from: toISO(startOfMonth(cursor)), to: toISO(endOfMonth(cursor)), label: monthLabel(cursor) };
   }, [mode, cursor]);
 
+  // Hiện ngay dữ liệu đã cache của kỳ này (nếu có), rồi cập nhật khi server trả lời
+  const [sum, setSum] = useState(() => cached.summary(from, to));
+  const [items, setItems] = useState(() => cached.list({ from, to }) || []);
+
   useEffect(() => {
     let alive = true;
     setErr('');
-    setSum(null);
+    setSum(cached.summary(from, to));
+    setItems(cached.list({ from, to }) || []);
     Promise.all([api.summary(from, to), api.list({ from, to })])
       .then(([s, l]) => { if (alive) { setSum(s); setItems(l); } })
       .catch((e) => alive && setErr(e.message));

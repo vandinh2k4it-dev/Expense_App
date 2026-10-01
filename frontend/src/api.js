@@ -3,8 +3,56 @@ const BASE = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/
 let token = localStorage.getItem('token') || '';
 let onUnauthorized = () => {};
 
+// ---------- Cache dữ liệu (hiện ngay lần mở sau, rồi cập nhật bằng dữ liệu mới) ----------
+const PREFIX = 'cache:';
+const MAX_CACHE_CHARS = 600000;
+
+function purgeCache() {
+  try {
+    Object.keys(localStorage).filter((k) => k.startsWith(PREFIX)).forEach((k) => localStorage.removeItem(k));
+  } catch { /* bỏ qua */ }
+}
+
+function buildQs(params) {
+  if (!params) return '';
+  const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null);
+  return entries.length ? '?' + new URLSearchParams(entries).toString() : '';
+}
+const cacheKey = (path, params) => PREFIX + path + buildQs(params);
+const cacheable = (path) => path.startsWith('/api/expenses') || path.startsWith('/api/stats');
+
+function peek(path, params) {
+  try {
+    const raw = localStorage.getItem(cacheKey(path, params));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+// ---------- Phát hiện server đang khởi động (chậm > 3.5 giây) ----------
+let pending = 0;
+let slowTimer = null;
+let slowShown = false;
+const emitSlow = (on) => window.dispatchEvent(new CustomEvent('api-slow', { detail: on }));
+function begin() {
+  pending++;
+  if (!slowTimer && !slowShown) {
+    slowTimer = setTimeout(() => { slowShown = true; emitSlow(true); }, 3500);
+  }
+}
+function end() {
+  pending = Math.max(0, pending - 1);
+  if (pending === 0) {
+    clearTimeout(slowTimer);
+    slowTimer = null;
+    if (slowShown) { slowShown = false; emitSlow(false); }
+  }
+}
+
 export const setToken = (t) => {
   token = t || '';
+  purgeCache(); // đổi tài khoản / đăng xuất thì xóa cache của người trước
   if (t) localStorage.setItem('token', t);
   else localStorage.removeItem('token');
 };
@@ -12,26 +60,34 @@ export const getToken = () => token;
 export const setUnauthorizedHandler = (fn) => { onUnauthorized = fn; };
 
 async function req(path, { method = 'GET', body, params } = {}) {
-  const qs = params
-    ? '?' + new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null)).toString()
-    : '';
   let res;
+  begin();
   try {
-    res = await fetch(`${BASE}${path}${qs}`, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  } catch {
-    throw new Error('Không kết nối được máy chủ. Nếu server free đang ngủ, hãy thử lại sau ~30 giây.');
+    try {
+      res = await fetch(`${BASE}${path}${buildQs(params)}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch {
+      throw new Error('Không kết nối được máy chủ. Nếu server free đang ngủ, hãy thử lại sau ~30 giây.');
+    }
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401 && token) onUnauthorized();
+    if (!res.ok) throw new Error(data.error || 'Có lỗi xảy ra');
+    if (method === 'GET' && cacheable(path)) {
+      try {
+        const s = JSON.stringify(data);
+        if (s.length <= MAX_CACHE_CHARS) localStorage.setItem(cacheKey(path, params), s);
+      } catch { /* hết dung lượng: bỏ qua */ }
+    }
+    return data;
+  } finally {
+    end();
   }
-  const data = await res.json().catch(() => ({}));
-  if (res.status === 401 && token) onUnauthorized();
-  if (!res.ok) throw new Error(data.error || 'Có lỗi xảy ra');
-  return data;
 }
 
 export const api = {
@@ -47,4 +103,10 @@ export const api = {
   summary: (from, to) => req('/api/stats/summary', { params: { from, to } }),
   months: (year) => req('/api/stats/months', { params: { year } }),
   ping: () => req('/health'),
+};
+
+/** Đọc dữ liệu đã cache (đồng bộ). Khóa phải khớp đúng tham số của lần gọi api tương ứng. */
+export const cached = {
+  list: (params) => peek('/api/expenses', params),
+  summary: (from, to) => peek('/api/stats/summary', { from, to }),
 };
