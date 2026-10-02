@@ -1,11 +1,12 @@
-fix(frontend): sửa dải hở dưới thanh tab trên iPhone và banner đè lời chào
+feat(backend): chạy backend dạng Vercel Functions để bỏ độ trễ server ngủ
 
-- Thanh tab chuyển sang kính tối mờ dần về đúng màu cuối của nền, không còn đường viền
-  khi iOS chừa dải ở đáy màn hình ở chế độ Màn hình chính
-- Đo khoảng chênh giữa màn hình và vùng hiển thị (--vp-gap) để không cộng vùng an toàn hai lần
-- Chuyển thông báo "server đang khởi động" xuống phía trên thanh tab, không che tiêu đề nữa
-- Hiện — thay vì 0đ cho chi hôm nay / tuần này khi dữ liệu chưa tải xong
-- Đổi màu chữ và nút giữa thanh tab cho hợp nền tối mới
+- Export Express app từ server.js, chỉ mở cổng khi chạy trực tiếp (npm start vẫn dùng được)
+- Thêm api/index.js làm điểm vào và vercel.json rewrite mọi đường dẫn về hàm
+- Khởi tạo/nâng cấp bảng chạy lười, một lần mỗi instance, bỏ qua nếu DB đã đủ cột
+- /health không đụng database, trả lời ngay cả khi DB chưa sẵn sàng
+- DB lỗi trả 503 JSON và tự thử lại ở lần gọi sau thay vì sập
+- Pool kết nối nhỏ (max 5, đóng sau 10 giây nhàn rỗi), bắt lỗi pool để không sập
+- README: hướng dẫn deploy backend lên Vercel, chọn khu vực gần DB, giữ Render làm dự phòng
 
 Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01LyWuwHtGqDhvJnyhMkThyu

@@ -9,18 +9,61 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
+// Pool nhỏ: trên Vercel mỗi instance chỉ cần vài kết nối, đóng sớm để không giữ kết nối của Neon.
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL && !/localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL)
     ? { rejectUnauthorized: false }
     : false,
+  max: 5,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 15000,
 });
+pool.on('error', (e) => console.error('Pool error:', e.message)); // kết nối nhàn rỗi bị Neon đóng: không làm sập app
 
 const origins = (process.env.CORS_ORIGIN || '*').split(',').map((s) => s.trim());
 app.use(cors({ origin: origins.includes('*') ? true : origins }));
 app.use(express.json({ limit: '1mb' }));
 
+app.get('/', (_req, res) => res.json({ ok: true, name: 'expense-api' }));
+// /health không đụng tới database: luôn trả lời nhanh
+app.get('/health', (_req, res) => res.json({ ok: true }));
+
+// Khởi tạo / nâng cấp bảng: chạy lười, đúng một lần cho mỗi instance, và bỏ qua nếu DB đã đủ.
+// (Trên serverless mỗi lần khởi động lạnh không cần chạy lại cả loạt ALTER TABLE.)
+let dbReady = null;
+function ensureDb() {
+  if (!dbReady) {
+    dbReady = initDb().catch((e) => {
+      dbReady = null; // lần gọi sau thử lại
+      throw e;
+    });
+  }
+  return dbReady;
+}
+app.use((req, res, next) => {
+  ensureDb().then(() => next(), (e) => {
+    console.error('Không khởi tạo được DB:', e.message);
+    res.status(503).json({ error: 'Cơ sở dữ liệu chưa sẵn sàng, thử lại sau ít giây' });
+  });
+});
+
+async function isSchemaCurrent() {
+  const r = await pool.query(`
+    SELECT
+      to_regclass('public.users') IS NOT NULL AS has_users,
+      to_regclass('public.expenses') IS NOT NULL AS has_expenses,
+      (SELECT COUNT(*) FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND ((table_name = 'expenses' AND column_name = 'type')
+             OR (table_name = 'users' AND column_name IN ('display_name', 'avatar')))) AS new_cols
+  `);
+  const s = r.rows[0];
+  return s.has_users && s.has_expenses && Number(s.new_cols) === 3;
+}
+
 async function initDb() {
+  if (await isSchemaCurrent()) return;
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
@@ -84,9 +127,6 @@ function cleanAvatar(v) {
   if (typeof v !== 'string' || v.length > AVATAR_MAX || !AVATAR_RE.test(v)) return { error: 'Ảnh đại diện không hợp lệ hoặc quá lớn' };
   return { value: v };
 }
-
-app.get('/', (_req, res) => res.json({ ok: true, name: 'expense-api' }));
-app.get('/health', (_req, res) => res.json({ ok: true }));
 
 // ---------- Auth ----------
 app.post('/api/auth/register', wrap(async (req, res) => {
@@ -248,9 +288,15 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Lỗi máy chủ' });
 });
 
-initDb()
-  .then(() => app.listen(PORT, () => console.log(`API chạy tại cổng ${PORT}`)))
-  .catch((e) => {
-    console.error('Không khởi tạo được DB:', e.message);
-    process.exit(1);
-  });
+// Chạy trực tiếp (npm start / Render / máy bạn): mở cổng như trước.
+// Trên Vercel file này chỉ được require từ api/index.js, không mở cổng.
+if (require.main === module) {
+  ensureDb()
+    .then(() => app.listen(PORT, () => console.log(`API chạy tại cổng ${PORT}`)))
+    .catch((e) => {
+      console.error('Không khởi tạo được DB:', e.message);
+      process.exit(1);
+    });
+}
+
+module.exports = app;
